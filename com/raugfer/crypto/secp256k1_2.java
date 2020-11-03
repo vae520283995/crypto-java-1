@@ -8,13 +8,13 @@ public class secp256k1_2 {
 
     private static final BigInteger a = BigInteger.ZERO;
     private static final BigInteger b = BigInteger.valueOf(7L);
-    private static final BigInteger P = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16);
-    private static final BigInteger n = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
+    private static final BigInteger P = new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
+    private static final BigInteger n = new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
     private static final BigInteger h = BigInteger.ONE;
-    private static final BigInteger Gx = new BigInteger("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798", 16);
-    private static final BigInteger Gy = new BigInteger("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8", 16);
+    private static final BigInteger Gx = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
+    private static final BigInteger Gy = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
 
-    private static final BigInteger beta = new BigInteger("7AE96A2B657C07106E64479EAC3434E99CF0497512F58995C1396C28719501EE", 16);
+    private static final BigInteger beta = new BigInteger("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee", 16);
 
     private static final boolean USE_ENDOMORPHISM = a.signum() == 0;
 
@@ -409,9 +409,9 @@ public class secp256k1_2 {
     }
 
     private static Object[] splitScalarEndo(BigInteger k) {
-        BigInteger a1 = new BigInteger("3086D221A7D46BCDE86C90E49284EB15", 16);
-        BigInteger b1 = new BigInteger("-E4437ED6010E88286F547FA90ABFE4C3", 16);
-        BigInteger a2 = new BigInteger("114CA50F7A8E2F3F657C1108D9D44CFD8", 16);
+        BigInteger a1 = new BigInteger("3086d221a7d46bcde86c90e49284eb15", 16);
+        BigInteger b1 = new BigInteger("-e4437ed6010e88286f547fa90abfe4c3", 16);
+        BigInteger a2 = new BigInteger("114ca50f7a8e2f3f657c1108d9d44cfd8", 16);
         BigInteger b2 = a1;
         BigInteger c1 = b2.multiply(k).divide(n);
         BigInteger c2 = b1.negate().multiply(k).divide(n);
