@@ -14,6 +14,7 @@ public class secp256k1_2 {
     private static final BigInteger Gx = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
     private static final BigInteger Gy = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
 
+    private static final BigInteger lambda = new BigInteger("5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72", 16);
     private static final BigInteger beta = new BigInteger("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee", 16);
 
     private static final boolean USE_ENDOMORPHISM = a.signum() == 0;
@@ -66,7 +67,6 @@ public class secp256k1_2 {
             BigInteger Y3 = mod(E.multiply(D.subtract(X3)).subtract(BigInteger.valueOf(8L).multiply(C)));
             BigInteger Z3 = mod(BigInteger.valueOf(2L).multiply(Y1).multiply(Z1));
             return new JacobianPoint(X3, Y3, Z3);
-
           }
 
         JacobianPoint add(JacobianPoint other) {
@@ -169,7 +169,7 @@ public class secp256k1_2 {
             if (this.precomputes != null) return this.precomputes;
             this.precomputes = new ArrayList<>();
             JacobianPoint dbl = this;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputes.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -181,7 +181,7 @@ public class secp256k1_2 {
             JacobianPoint p = JacobianPoint.ZERO;
             JacobianPoint f = JacobianPoint.ZERO;
             List<JacobianPoint> dbls = this.getPrecomputes();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -244,7 +244,7 @@ public class secp256k1_2 {
             Point dbl = new Point(this.x, this.y);
             Point p = Point.ZERO;
             Point f = Point.ZERO;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
                 n = n.shiftRight(1);
@@ -257,7 +257,7 @@ public class secp256k1_2 {
             if (this.precomputes != null) return this.precomputes;
             this.precomputes = new ArrayList<>();
             Point dbl = this;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputes.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -269,7 +269,7 @@ public class secp256k1_2 {
             Point p = Point.ZERO;
             Point f = Point.ZERO;
             List<Point> dbls = this.getPrecomputes();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -282,7 +282,7 @@ public class secp256k1_2 {
             if (this.precomputesJ != null) return this.precomputesJ;
             this.precomputesJ = new ArrayList<>();
             JacobianPoint dbl = JacobianPoint.fromAffine(this);
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputesJ.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -294,7 +294,7 @@ public class secp256k1_2 {
             JacobianPoint p = JacobianPoint.ZERO;
             JacobianPoint f = JacobianPoint.ZERO;
             List<JacobianPoint> dbls = this.getPrecomputesJ();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -427,9 +427,22 @@ public class secp256k1_2 {
 
 //        Point.BASE.multiplyPreCT(BigInteger.valueOf(2L));
 //        Point.BASE.multiplyPreCTJ(BigInteger.valueOf(2L));
+//        Point point = Point.BASE.multiplyPreCT(BigInteger.valueOf(256L));
+//        System.out.println(point.x);
+//        System.out.println(point.y);
+//        JacobianPoint jacobianPoint = JacobianPoint.BASE.multiplyPreCT(BigInteger.valueOf(256L));
+//        System.out.println(jacobianPoint.toAffine().x);
+//        System.out.println(jacobianPoint.toAffine().y);
+//        BigInteger[] gen = secp256k1.gen(BigInteger.valueOf(256L));
+//        System.out.println(gen[0]);
+//        System.out.println(gen[1]);
 //        JacobianPoint jacobianPoint = JacobianPoint.BASE.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
-//        Point.BASE.multiplywNAF(BigInteger.valueOf(2L));
+//        Point point = Point.BASE.multiplywNAF(BigInteger.valueOf(520L));
+//        System.out.println(point.x);
+//        System.out.println(point.y);
         JacobianPoint jacobianPoint = JacobianPoint.BASE.multiplyUnsafe(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+        System.out.println(jacobianPoint.toAffine().x);
+        System.out.println(jacobianPoint.toAffine().y);
         long a = System.nanoTime();
 //        Point publicKey = getPublicKey(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        secp256k1.gen(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
@@ -438,11 +451,11 @@ public class secp256k1_2 {
 //        G.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        JacobianPoint.BASE.multiplyDA(BigInteger.valueOf(2L));
 //        Point.BASE.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1; i++) {
 //            jacobianPoint.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
-            jacobianPoint.multiplyUnsafe(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+//            jacobianPoint.multiplyUnsafe(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        jacobianPoint.multiplyDA(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
-//            Point.BASE.multiplywNAF(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+            Point.BASE.multiplywNAF(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
         }
         // 25032093
         // 20418850
@@ -459,5 +472,26 @@ public class secp256k1_2 {
 //        System.out.println(publicKey.y);
 //        System.out.println(gen[0]);
 //        System.out.println(gen[1]);
+
+//        BigInteger base;
+//        BigInteger p = BigInteger.ONE;
+//        for (int i = 0; i < 65; i++) {
+//            base = p;
+//            System.out.println(base);
+//            for (int j = 1; j < 8; j++) {
+//                base = base.add(p);
+//                System.out.println(base);
+//            }
+//            p = base.multiply(BigInteger.valueOf(2L));
+//            System.out.println();
+//        }
+//
+//        System.out.println(BigInteger.valueOf(2L).pow(256));
+//
+//        BigInteger c = BigInteger.ONE;
+//        for (int i = 0; i <= 256; i++) {
+//            System.out.println(c);
+//            c = c.multiply(BigInteger.valueOf(2L));
+//        }
     }
 }

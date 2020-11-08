@@ -14,6 +14,11 @@ public class secp256k1_3 {
     private static final BigInteger Gx = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
     private static final BigInteger Gy = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
 
+    private static final BigInteger lambda = new BigInteger("5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72", 16);
+    private static final BigInteger beta = new BigInteger("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee", 16);
+
+    private static final boolean USE_ENDOMORPHISM = a.signum() == 0;
+
     static class JacobianPoint {
         private final BigInteger x;
         private final BigInteger y;
@@ -43,6 +48,16 @@ public class secp256k1_3 {
             BigInteger x = mod(this.x.multiply(invZ2));
             BigInteger y = mod(this.y.multiply(invZ2).multiply(invZ));
             return new Point(x, y);
+        }
+
+        boolean equals(JacobianPoint other) {
+            JacobianPoint a = this;
+            JacobianPoint b = other;
+            BigInteger az2 = mod(a.z.multiply(a.z));
+            BigInteger az3 = mod(a.z.multiply(az2));
+            BigInteger bz2 = mod(b.z.multiply(b.z));
+            BigInteger bz3 = mod(b.z.multiply(bz2));
+            return mod(a.x.multiply(bz2)).compareTo(mod(az2.multiply(b.x))) == 0 && mod(a.y.multiply(bz3)).compareTo(mod(az3.multiply(b.y))) == 0;
         }
 
         JacobianPoint negate() {
@@ -101,6 +116,42 @@ public class secp256k1_3 {
             return new JacobianPoint(X3, Y3, Z3);
         }
 
+        JacobianPoint multiplyUnsafe(BigInteger scalar) {
+            BigInteger n = mod(scalar, secp256k1_3.n);
+            if (n.signum() <= 0) {
+                throw new IllegalArgumentException("Point#multiply: invalid scalar, expected positive integer");
+            }
+            if (!USE_ENDOMORPHISM) {
+                JacobianPoint p = JacobianPoint.ZERO;
+                JacobianPoint d = this;
+                while (n.signum() > 0) {
+                    if (n.and(BigInteger.ONE).signum() == 1) p = p.add(d);
+                    d = d.doubleAdd();
+                    n = n.shiftRight(1);
+                }
+                return p;
+            }
+            BigInteger[] k = splitScalarEndo(n);
+            boolean k1neg = k[0].signum() < 0;
+            boolean k2neg = k[1].signum() < 0;
+            BigInteger k1 = k1neg ? k[0].negate() : k[0];
+            BigInteger k2 = k2neg ? k[1].negate() : k[1];
+            JacobianPoint k1p = JacobianPoint.ZERO;
+            JacobianPoint k2p = JacobianPoint.ZERO;
+            JacobianPoint d = this;
+            while (k1.signum() > 0 || k2.signum() > 0) {
+                if (k1.and(BigInteger.ONE).signum() == 1) k1p = k1p.add(d);
+                if (k2.and(BigInteger.ONE).signum() == 1) k2p = k2p.add(d);
+                d = d.doubleAdd();
+                k1 = k1.shiftRight(1);
+                k2 = k2.shiftRight(1);
+            }
+            if (k1neg) k1p = k1p.negate();
+            if (k2neg) k2p = k2p.negate();
+            k2p = new JacobianPoint(mod(k2p.x.multiply(beta)), k2p.y, k2p.z);
+            return k1p.add(k2p);
+        }
+
         JacobianPoint multiplyDA(BigInteger n) {
             JacobianPoint p = ZERO;
             JacobianPoint d = this;
@@ -116,7 +167,7 @@ public class secp256k1_3 {
             JacobianPoint dbl = new JacobianPoint(this.x, this.y, this.z);
             JacobianPoint p = JacobianPoint.ZERO;
             JacobianPoint f = JacobianPoint.ZERO;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
                 n = n.shiftRight(1);
@@ -129,7 +180,7 @@ public class secp256k1_3 {
             if (this.precomputes != null) return this.precomputes;
             this.precomputes = new ArrayList<>();
             JacobianPoint dbl = this;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputes.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -141,7 +192,7 @@ public class secp256k1_3 {
             JacobianPoint p = JacobianPoint.ZERO;
             JacobianPoint f = JacobianPoint.ZERO;
             List<JacobianPoint> dbls = this.getPrecomputes();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -204,7 +255,7 @@ public class secp256k1_3 {
             Point dbl = new Point(this.x, this.y);
             Point p = Point.ZERO;
             Point f = Point.ZERO;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
                 n = n.shiftRight(1);
@@ -217,7 +268,7 @@ public class secp256k1_3 {
             if (this.precomputes != null) return this.precomputes;
             this.precomputes = new ArrayList<>();
             Point dbl = this;
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputes.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -229,7 +280,7 @@ public class secp256k1_3 {
             Point p = Point.ZERO;
             Point f = Point.ZERO;
             List<Point> dbls = this.getPrecomputes();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -242,7 +293,7 @@ public class secp256k1_3 {
             if (this.precomputesJ != null) return this.precomputesJ;
             this.precomputesJ = new ArrayList<>();
             JacobianPoint dbl = JacobianPoint.fromAffine(this);
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 this.precomputesJ.add(dbl);
                 dbl = dbl.doubleAdd();
             }
@@ -254,7 +305,7 @@ public class secp256k1_3 {
             JacobianPoint p = JacobianPoint.ZERO;
             JacobianPoint f = JacobianPoint.ZERO;
             List<JacobianPoint> dbls = this.getPrecomputesJ();
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i <= 256; i++) {
                 dbl = dbls.get(i);
                 if (n.and(BigInteger.ONE).signum() == 1) p = p.add(dbl);
                 else f = f.add(dbl);
@@ -262,7 +313,7 @@ public class secp256k1_3 {
             }
             return p.toAffine();
         }
-        
+
         List<JacobianPoint> precomputeWindow(int W) {
             if (this.precomputesW != null) return this.precomputesW;
             int windows = 256 / W + 1;
@@ -325,6 +376,10 @@ public class secp256k1_3 {
             JacobianPoint[] pf = this.wNAF(n);
             return pf[0].toAffine();
         }
+
+        boolean equals(Point other) {
+            return this.x.compareTo(other.x) == 0 && this.y.compareTo(other.y) == 0;
+        }
     }
 
     private static BigInteger mod(BigInteger a) {
@@ -368,11 +423,25 @@ public class secp256k1_3 {
         return mod(result[1], modulo);
     }
 
+    private static BigInteger[] splitScalarEndo(BigInteger k) {
+        BigInteger a1 = new BigInteger("3086d221a7d46bcde86c90e49284eb15", 16);
+        BigInteger b1 = new BigInteger("-e4437ed6010e88286f547fa90abfe4c3", 16);
+        BigInteger a2 = new BigInteger("114ca50f7a8e2f3f657c1108d9d44cfd8", 16);
+        BigInteger b2 = a1;
+        BigInteger c1 = b2.multiply(k).divide(n);
+        BigInteger c2 = b1.negate().multiply(k).divide(n);
+        BigInteger k1 = k.subtract(c1.multiply(a1)).subtract(c2.multiply(a2));
+        BigInteger k2 = c1.negate().multiply(b1).subtract(c2.multiply(b2));
+        return new BigInteger[]{k1, k2};
+    }
+
     public static void main(String[] args) {
 //        Point.BASE.multiplyPreCT(BigInteger.valueOf(2L));
 //        Point.BASE.multiplyPreCTJ(BigInteger.valueOf(2L));
-        Point.BASE.multiplywNAF(BigInteger.valueOf(2L));
-//        JacobianPoint.BASE.multiplyPreCT(BigInteger.valueOf(2L));
+//        Point.BASE.multiplywNAF(BigInteger.valueOf(2L));
+        BigInteger scalar = BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L));
+        JacobianPoint jacobianPoint2 = JacobianPoint.BASE.multiplyPreCT(scalar);
+        JacobianPoint jacobianPoint1 = JacobianPoint.BASE.multiplyUnsafe(scalar);
         long a = System.nanoTime();
 //        Point publicKey = getPublicKey(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        Point publicKey = getPublicKey(BigInteger.valueOf(2L));
@@ -386,9 +455,14 @@ public class secp256k1_3 {
 //        G.multiplyPreCT(BigInteger.valueOf(2L));
 //        Point.BASE.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        Point.BASE.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
-        for (int i = 0; i < 10000; i++) {
-            Point.BASE.multiplywNAF(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+        for (int i = 0; i < 1000; i++) {
+//            Point.BASE.multiplywNAF(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+
+//            JacobianPoint jacobianPoint1 = JacobianPoint.BASE.multiplyDA(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L))).multiplyDA(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
+            JacobianPoint jacobianPoint = jacobianPoint1.multiplyUnsafe(scalar);
+//            JacobianPoint jacobianPoint3 = jacobianPoint2.multiplyPreCT(scalar);
         }
+
 //            JacobianPoint.BASE.multiplyPreCT(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
         long b = System.nanoTime();
         System.out.println((b - a) / 1000);
@@ -396,5 +470,7 @@ public class secp256k1_3 {
 //        System.out.println(publicKey.y);
 //        System.out.println(gen[0]);
 //        System.out.println(gen[1]);
+
+
     }
 }
