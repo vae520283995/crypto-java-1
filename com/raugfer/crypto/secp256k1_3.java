@@ -442,6 +442,8 @@ public class secp256k1_3 {
         BigInteger scalar = BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L));
         JacobianPoint jacobianPoint2 = JacobianPoint.BASE.multiplyPreCT(scalar);
         JacobianPoint jacobianPoint1 = JacobianPoint.BASE.multiplyUnsafe(scalar);
+        System.out.println(jacobianPoint1.toAffine().x);
+        System.out.println(jacobianPoint1.toAffine().y);
         long a = System.nanoTime();
 //        Point publicKey = getPublicKey(BigInteger.valueOf(2L).pow(255).subtract(BigInteger.valueOf(19L)));
 //        Point publicKey = getPublicKey(BigInteger.valueOf(2L));
